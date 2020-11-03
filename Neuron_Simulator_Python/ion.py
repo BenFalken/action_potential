@@ -10,7 +10,8 @@ class Ion:
 		self.x = x
 		self.y = y
 
-	def change_pos(self, ions, channels, dt):
+	def update(self, cell):
+		ions, channels, membrane_potential, dt = cell.ions, cell.channels, cell.membrane_potential, cell.dt
 		grad_x, grad_y = self.get_gradient(ions)
 		delta_x, delta_y = self.return_delta(grad_x, grad_y, dt)
 
@@ -53,8 +54,8 @@ class Ion:
 				mult_x = 1
 
 			if dist_mag != 0:
-				x_force += mult_x*abs(cos(theta))*self.charge*ion.charge/dist_mag
-				y_force += mult_y*abs(sin(theta))*self.charge*ion.charge/dist_mag
+				x_force += (mult_x*abs(cos(theta))*self.charge*ion.charge/dist_mag) #+((e**(self.charge*ion.charge))/dist_mag)
+				y_force += (mult_y*abs(sin(theta))*self.charge*ion.charge/dist_mag) #+((e**(self.charge*ion.charge))/dist_mag)
 			else:
 				continue
 		x_force, y_force = x_force/self.mass, y_force/self.mass
@@ -73,12 +74,12 @@ class Ion:
 		x, y = self.x + delta_x, self.y + delta_y
 		anyChannelOpen = False
 		for channel in channels:
-			if channel.ion_perm == self.name and (abs(x-channel.start_x) <= channel.diam/2): #or abs(y - ((MEMBRANE_END_Y+MEMBRANE_START_Y)/2)) > ((MEMBRANE_END_Y-MEMBRANE_START_Y)/2)-1)
+			if channel.isOpen and channel.ion_perm == self.name and (abs(x-channel.start_x) <= channel.diam/2): #or abs(y - ((MEMBRANE_END_Y+MEMBRANE_START_Y)/2)) > ((MEMBRANE_END_Y-MEMBRANE_START_Y)/2)-1)
 				anyChannelOpen = True
 		return anyChannelOpen
 
 	def testChannels(self, delta_x, channels):
 		for channel in channels:
-			if channel.ion_perm == self.name and (abs(self.x-channel.start_x) <= channel.diam/2) and (abs((self.x+delta_x)-channel.start_x) > channel.diam/2):
-				return self.clamp(self.x + delta_x, channel.start_x-(channel.diam/2)+1, channel.start_x+(channel.diam/2)-1)
-		return self.clamp(self.x + delta_x, 0, WIDTH)
+			if channel.isOpen and channel.ion_perm == self.name and (abs(self.x-channel.start_x) <= channel.diam/2) and (abs((self.x+delta_x)-channel.start_x) > channel.diam/2):
+				return clamp(self.x + delta_x, channel.start_x-(channel.diam/2)+1, channel.start_x+(channel.diam/2)-1)
+		return clamp(self.x + delta_x, 0, WIDTH)
